@@ -19,5 +19,5 @@ variable "node_count" {
 }
 
 variable "node_vm_size" {
-  default = "Standard_B1s"  # Small VM eligible for free-tier usage
+  default = "Standard_B2s"  # Small VM eligible for free-tier usage
 }
