@@ -1,6 +1,6 @@
 provider "azurerm" {
   features {}
-  subscription_id = "eea7dd66-806c-47a7-912f-2e3f1af71f5e"
+  subscription_id = var.subscription_id
 }
 
 resource "azurerm_resource_group" "rg" {
@@ -33,8 +33,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   network_profile {
-    network_plugin = "azure"
-    load_balancer_sku = "standard"
+    network_plugin     = "azure"
+    load_balancer_sku  = "standard"
   }
 
   depends_on = [
@@ -42,8 +42,20 @@ resource "azurerm_kubernetes_cluster" "aks" {
   ]
 }
 
+# Assign Contributor to the Jenkins Service Principal
+resource "azurerm_role_assignment" "jenkins_sp_contributor" {
+  scope                = "/subscriptions/${var.subscription_id}"
+  role_definition_name = "Contributor"
+  principal_id         = var.sp_object_id
+}
+
+# Assign AcrPull to AKS kubelet
 resource "azurerm_role_assignment" "acr_pull" {
   scope                = azurerm_container_registry.acr.id
   role_definition_name = "AcrPull"
   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+
+  depends_on = [
+    azurerm_kubernetes_cluster.aks
+  ]
 }
