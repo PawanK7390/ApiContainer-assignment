@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         AZURE_CREDENTIALS_ID = 'azure-service-principal'
-        RESOURCE_GROUP = 'rg-assignment'
         IMAGE_NAME = 'apicontainer'
         IMAGE_TAG = 'latest'
         TF_WORKING_DIR = 'terraform'
@@ -13,18 +12,6 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 git branch: 'master', url: 'https://github.com/PawanK7390/ApiContainer-assignment.git'
-            }
-        }
-
-        stage('Build .NET App') {
-            steps {
-                bat 'dotnet publish ApiContainer/ApiContainer.csproj -c Release -o out'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                bat "docker build -t %ACR_LOGIN_SERVER%/%IMAGE_NAME%:%IMAGE_TAG% -f ApiContainer/Dockerfile ApiContainer"
             }
         }
 
@@ -39,21 +26,11 @@ pipeline {
             }
         }
 
-        stage('Terraform Plan') {
-            steps {
-                dir("${TF_WORKING_DIR}") {
-                    withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
-                        bat 'terraform plan -out=tfplan'
-                    }
-                }
-            }
-        }
-
         stage('Terraform Apply') {
             steps {
                 dir("${TF_WORKING_DIR}") {
                     withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
-                        bat 'terraform apply -auto-approve tfplan'
+                        bat 'terraform apply -auto-approve'
                     }
                 }
             }
@@ -63,7 +40,6 @@ pipeline {
             steps {
                 script {
                     def tfOutput = bat(script: "cd ${TF_WORKING_DIR} && terraform output -json", returnStdout: true).trim()
-                    tfOutput = tfOutput.replaceAll("(?s)^.*\\{", "{")
                     def parsed = readJSON text: tfOutput
                     env.ACR_LOGIN_SERVER = parsed.acr_login_server.value
                     env.RESOURCE_GROUP = parsed.resource_group.value
@@ -72,12 +48,18 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            steps {
+                bat "docker build -t ${env.ACR_LOGIN_SERVER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} -f ApiContainer/Dockerfile ApiContainer"
+            }
+        }
+
         stage('Login to ACR') {
             steps {
                 withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
+                    bat "az login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%"
                     script {
                         def acrName = env.ACR_LOGIN_SERVER.tokenize('.')[0]
-                        bat "az login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%"
                         bat "az acr login --name ${acrName}"
                     }
                 }
@@ -86,13 +68,13 @@ pipeline {
 
         stage('Push Docker Image to ACR') {
             steps {
-                bat "docker push %ACR_LOGIN_SERVER%/%IMAGE_NAME%:%IMAGE_TAG%"
+                bat "docker push ${env.ACR_LOGIN_SERVER}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
             }
         }
 
         stage('Get AKS Credentials') {
             steps {
-                bat "az aks get-credentials --resource-group %RESOURCE_GROUP% --name %AKS_NAME% --overwrite-existing"
+                bat "az aks get-credentials --resource-group ${env.RESOURCE_GROUP} --name ${env.AKS_NAME} --overwrite-existing"
             }
         }
 
