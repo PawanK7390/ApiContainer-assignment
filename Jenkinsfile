@@ -38,14 +38,23 @@ pipeline {
 
         stage('Get Terraform Outputs') {
             steps {
-                script {
-                    def tfOutput = bat(script: "cd ${TF_WORKING_DIR} && terraform output -json", returnStdout: true).trim()
-                    tfOutput = tfOutput.replaceAll("(?s)^.*\\{", "{") // clean JSON if needed
-                    def parsed = readJSON text: tfOutput
-                    env.ACR_LOGIN_SERVER = parsed.acr_login_server.value
-                    env.RESOURCE_GROUP = parsed.resource_group.value
-                    env.AKS_NAME = parsed.aks_name.value
-                    env.ACR_NAME = parsed.acr_login_server.value.tokenize('.')[0]
+                dir("${TF_WORKING_DIR}") {
+                    script {
+                        def tfOutput = bat(
+                            script: 'terraform output -json',
+                            returnStdout: true
+                        ).trim()
+
+                        def outputs = readJSON text: tfOutput
+
+                        env.ACR_LOGIN_SERVER = outputs.acr_login_server.value
+                        env.AKS_NAME = outputs.aks_name.value
+                        env.RESOURCE_GROUP = outputs.resource_group.value
+
+                        echo "ACR Login Server: ${env.ACR_LOGIN_SERVER}"
+                        echo "AKS Name: ${env.AKS_NAME}"
+                        echo "Resource Group: ${env.RESOURCE_GROUP}"
+                    }
                 }
             }
         }
