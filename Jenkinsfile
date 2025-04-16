@@ -73,8 +73,11 @@ pipeline {
         stage('Login to ACR') {
             steps {
                 withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
-                    bat "az login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%"
-                    bat "az acr login --name %ACR_NAME%"
+                    script {
+                        def acrName = env.ACR_LOGIN_SERVER.tokenize('.')[0]
+                        bat "az login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%"
+                        bat "az acr login --name ${acrName}"
+                    }
                 }
             }
         }
