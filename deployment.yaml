@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: dotnet-api
-          image: pk7390docker.azurecr.io/apicontainer:latest  
+          image: pk7390docker.azurecr.io/apicontainer:latest
           ports:
             - containerPort: 8080
           imagePullPolicy: Always
@@ -31,5 +31,5 @@ spec:
     app: dotnet-api
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 8080
+      port: 80         
+      targetPort: 8080 
