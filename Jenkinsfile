@@ -36,17 +36,6 @@ pipeline {
             }
         }
 
-        stage('Get Terraform Outputs') {
-            steps {
-                script {
-                    def tfOutput = bat(script: "cd ${TF_WORKING_DIR} && terraform output -json", returnStdout: true).trim()
-                    def parsed = readJSON text: tfOutput
-                    env.ACR_LOGIN_SERVER = parsed.acr_login_server.value
-                    env.RESOURCE_GROUP = parsed.resource_group.value
-                    env.AKS_NAME = parsed.aks_name.value
-                }
-            }
-        }
 
         stage('Build Docker Image') {
             steps {
@@ -86,15 +75,11 @@ pipeline {
 
         stage('Check Deployment') {
             steps {
-                bat '''
-                echo Getting AKS Nodes...
-                kubectl get nodes
-
-                echo Getting Service Info...
-                kubectl get svc dotnet-api-service
-                '''
+                bat 'kubectl get nodes'
+                bat 'kubectl get svc dotnet-api-service'
             }
         }
+
     }
 
     post {
