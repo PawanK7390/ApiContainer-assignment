@@ -5,7 +5,7 @@ variable "subscription_id" {
 
 variable "sp_object_id" {
   description = "Object ID of the Jenkins service principal"
-  default     = "4dafa805-3ec3-4f90-b12c-96b38dc14415" # ← Replace with correct SP object ID
+  default     = "f8173b09-63e7-4a11-a03c-923cf0d2ecfe" 
 }
 
 variable "location" {

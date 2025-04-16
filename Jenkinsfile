@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        AZURE_CREDENTIALS_ID = 'azure-service-principal'
+        AZURE_CREDENTIALS_ID = 'api7390'
         IMAGE_NAME = 'apicontainer'
         IMAGE_TAG = 'latest'
         TF_WORKING_DIR = 'terraform'
