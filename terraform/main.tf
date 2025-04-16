@@ -42,20 +42,20 @@ resource "azurerm_kubernetes_cluster" "aks" {
   ]
 }
 
-# Assign Contributor to the Jenkins Service Principal
-resource "azurerm_role_assignment" "jenkins_sp_contributor" {
-  scope                = "/subscriptions/${var.subscription_id}"
-  role_definition_name = "Contributor"
-  principal_id         = var.sp_object_id
-}
+# # Assign Contributor to the Jenkins Service Principal
+# resource "azurerm_role_assignment" "jenkins_sp_contributor" {
+#   scope                = "/subscriptions/${var.subscription_id}"
+#   role_definition_name = "Owner"
+#   principal_id         = var.sp_object_id
+# }
 
-# Assign AcrPull to AKS kubelet
-resource "azurerm_role_assignment" "acr_pull" {
-  scope                = azurerm_container_registry.acr.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+# # Assign AcrPull to AKS kubelet
+# resource "azurerm_role_assignment" "acr_pull" {
+#   scope                = azurerm_container_registry.acr.id
+#   role_definition_name = "AcrPull"
+#   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
 
-  depends_on = [
-    azurerm_kubernetes_cluster.aks
-  ]
-}
+#   depends_on = [
+#     azurerm_kubernetes_cluster.aks
+#   ]
+# }
