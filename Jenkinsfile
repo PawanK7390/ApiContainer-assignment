@@ -36,28 +36,47 @@ pipeline {
             }
         }
 
+        stage('Get Terraform Outputs') {
+            steps {
+                script {
+                    def tfOutput = bat(script: "cd ${TF_WORKING_DIR} && terraform output -json", returnStdout: true).trim()
+                    tfOutput = tfOutput.replaceAll("(?s)^.*\\{", "{") // clean JSON if needed
+                    def parsed = readJSON text: tfOutput
+                    env.ACR_LOGIN_SERVER = parsed.acr_login_server.value
+                    env.RESOURCE_GROUP = parsed.resource_group.value
+                    env.AKS_NAME = parsed.aks_name.value
+                    env.ACR_NAME = parsed.acr_login_server.value.tokenize('.')[0]
+                }
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
-                bat "docker build -t ${env.ACR_LOGIN_SERVER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} -f ApiContainer/Dockerfile ."
+                bat "docker build -t %ACR_LOGIN_SERVER%/%IMAGE_NAME%:%IMAGE_TAG% -f ApiContainer/Dockerfile ."
             }
         }
 
         stage('Login to ACR') {
             steps {
-                bat "az acr login --name %ACR_NAME%"
+                withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
+                    bat "az login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%"
+                    bat "az acr login --name %ACR_NAME%"
+                }
             }
         }
 
         stage('Push Docker Image to ACR') {
             steps {
-                bat "docker push ${env.ACR_LOGIN_SERVER}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
+                bat "docker push %ACR_LOGIN_SERVER%/%IMAGE_NAME%:%IMAGE_TAG%"
             }
         }
 
         stage('Get AKS Credentials') {
             steps {
-                bat "az aks get-credentials --resource-group ${env.RESOURCE_GROUP} --name ${env.AKS_NAME} --overwrite-existing"
+                withCredentials([azureServicePrincipal(credentialsId: AZURE_CREDENTIALS_ID)]) {
+                    bat "az login --service-principal -u %AZURE_CLIENT_ID% -p %AZURE_CLIENT_SECRET% --tenant %AZURE_TENANT_ID%"
+                    bat "az aks get-credentials --resource-group %RESOURCE_GROUP% --name %AKS_NAME% --overwrite-existing"
+                }
             }
         }
 
@@ -69,11 +88,9 @@ pipeline {
 
         stage('Check Deployment') {
             steps {
-                bat 'kubectl get nodes'
-                bat 'kubectl get svc dotnet-api-service'
+                bat 'kubectl get nodes && kubectl get svc dotnet-api-service'
             }
         }
-
     }
 
     post {
