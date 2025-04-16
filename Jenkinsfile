@@ -39,7 +39,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                bat "docker build -t ${env.ACR_LOGIN_SERVER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} -f ApiContainer/Dockerfile ApiContainer"
+                bat "docker build -t ${env.ACR_LOGIN_SERVER}/${env.IMAGE_NAME}:${env.IMAGE_TAG} -f ApiContainer/Dockerfile ."
             }
         }
 
