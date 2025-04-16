@@ -50,12 +50,12 @@ resource "azurerm_kubernetes_cluster" "aks" {
 # }
 
 # Assign AcrPull to AKS kubelet
-# resource "azurerm_role_assignment" "acr_pull" {
-#   scope                = azurerm_container_registry.acr.id
-#   role_definition_name = "AcrPull"
-#   principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+resource "azurerm_role_assignment" "acr_pull" {
+  scope                = azurerm_container_registry.acr.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
 
-#   depends_on = [
-#     azurerm_kubernetes_cluster.aks
-#   ]
-# }
+  depends_on = [
+    azurerm_kubernetes_cluster.aks
+  ]
+}
